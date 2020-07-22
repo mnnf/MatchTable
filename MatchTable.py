@@ -111,10 +111,9 @@ def get_sos(taisensha_info_list, taisensha_info_rec):
     sos = 0
     for rec in taisensha_info_rec.taisen_rireki:
         aite_info = get_aite_info(taisensha_info_list, rec.name2)
-        if aite_info == None:
-            print('対戦相手が見つかりません', rec.name2)
-        score = get_score(aite_info.taisen_rireki)
-        sos += score
+        if aite_info != None:
+            score = get_score(aite_info.taisen_rireki)
+            sos += score
     return sos
 
 # SOSOSを計算
@@ -122,8 +121,9 @@ def get_sosos(taisensha_info_list, taisensha_info_rec):
     sosos = 0
     for rec in taisensha_info_rec.taisen_rireki:
         aite_info = get_aite_info(taisensha_info_list, rec.name2)
-        sos = get_sos(taisensha_info_list, aite_info)
-        sosos += sos
+        if aite_info != None:
+            sos = get_sos(taisensha_info_list, aite_info)
+            sosos += sos
     return sosos
 
 # 成績の列位置を取得
@@ -148,6 +148,7 @@ def read_excel(sheet, taisenNo, taisensha_info_list):
 
     for row in range(start_sankasha_row, sheet.max_row + 1):
 
+        # 対局者名を取得
         name = sheet.cell(row, sankasha_name_col).value
         if name != None:
 
@@ -172,6 +173,22 @@ def read_excel(sheet, taisenNo, taisensha_info_list):
             # 参加者リストに追加
             taisensha_info_list.append(taisensha_info(row = row, name = name, kiryoku = kiryoku, score = score, taisen_rireki = taisen_rireki_info_list, sos = 0, sosos = 0, jyuni = 0))
 
+# 過去の対戦情報の矛盾をチェック
+def check_taisen_rireki(taisensha_info_list):
+    error_flag = False
+    for rec in taisensha_info_list:
+        for i, senreki in enumerate(rec.taisen_rireki):
+            aite_info = get_aite_info(taisensha_info_list, senreki.name2)
+            if aite_info == None:
+                # 不戦勝などは対局者情報が取得できない。
+                continue
+            if len(aite_info.taisen_rireki) > i:
+                aite_senreki = aite_info.taisen_rireki[i]
+                if senreki.kekka == aite_senreki.kekka:
+                    print('{}回戦の {} vs {} 戦の結果が両者同じです。'.format(i+1, rec.name, aite_info.name))
+                    error_flag = True
+    return not error_flag
+
 # 対局者決定
 def player_decision(taisenNo, execel_file_name):
 
@@ -182,6 +199,10 @@ def player_decision(taisenNo, execel_file_name):
 
     # エクセルから参加者と過去の対戦情報を読み取り
     read_excel(sheet, taisenNo, taisensha_info_list)
+
+    # 過去の対戦情報の矛盾をチェック
+    if check_taisen_rireki(taisensha_info_list) == False:
+        return
 
     # スコア・棋力・登録順にする
     taisensha_info_list = sorted(taisensha_info_list, key=lambda x: (x.score, x.kiryoku, x.row * -1), reverse=True)
@@ -198,25 +219,31 @@ def player_decision(taisenNo, execel_file_name):
 
         # 対戦者なし
         if len(mikettei_list) == 0:
-            continue
+            # 不戦勝扱いにする
+            # 対戦リストに登録
+            taisen_rireki_info = taisen_rireki(taisenNo, rec.name, '不戦勝', '〇')
+            rec.taisen_rireki.append(taisen_rireki_info)
+        else:
 
-        # 対戦相手決定
-        aite_info = mikettei_list[0]
+            # 対戦相手決定
+            aite_info = mikettei_list[0]
 
-        # 対戦リストに登録
-        taisen_rireki_info = taisen_rireki(taisenNo, rec.name, aite_info.name, None)
-        rec.taisen_rireki.append(taisen_rireki_info)
+            # 対戦リストに登録
+            taisen_rireki_info = taisen_rireki(taisenNo, rec.name, aite_info.name, None)
+            rec.taisen_rireki.append(taisen_rireki_info)
 
-        taisen_rireki_info = taisen_rireki(taisenNo, aite_info.name, rec.name, None)
-        aite_info.taisen_rireki.append(taisen_rireki_info)
+            taisen_rireki_info = taisen_rireki(taisenNo, aite_info.name, rec.name, None)
+            aite_info.taisen_rireki.append(taisen_rireki_info)
 
     # エクセルに対戦者名を書き込み
-    for i, rec in enumerate(taisensha_info_list):
-        if len(rec.taisen_rireki) == taisenNo:
-            if rec.taisen_rireki[taisenNo-1].kekka == None:
-                row = rec.row
-                col = taisen_start_col + (taisenNo - 1) * 2
-                sheet.cell(row, col).value = rec.taisen_rireki[taisenNo-1].name2
+    for rec in taisensha_info_list:
+        if len(rec.taisen_rireki) >= taisenNo:
+            senreki = rec.taisen_rireki[taisenNo - 1]
+            col = taisen_start_col + (taisenNo - 1) * 2
+            sheet.cell(rec.row, col).value = senreki.name2
+            if senreki.kekka != None:
+                col = taisen_start_col + (taisenNo - 1) * 2 + 1
+                sheet.cell(rec.row, col).value = senreki.kekka
 
     wb.save(execel_file_name)
 
@@ -235,6 +262,10 @@ def write_result(execel_file_name):
 
     # エクセルから参加者と過去の対戦情報を読み取り
     read_excel(sheet, taisenNo, taisensha_info_list)
+
+    # 過去の対戦情報の矛盾をチェック
+    if check_taisen_rireki(taisensha_info_list) == False:
+        return
 
     # SOSを計算
     taisensha_info_list_wk = []
@@ -286,6 +317,8 @@ if __name__ == "__main__":
 
     excel_file_name = sys.argv[1]
     cmd = sys.argv[2]
+    #excel_file_name = '対局者一覧.xlsx'
+    #cmd = 'result'
 
     if cmd == 'result':
         write_result(excel_file_name)
