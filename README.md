@@ -49,3 +49,17 @@ $ python MatchTable.py 対局者一覧.xlsx 2
 ```shell
 $ python MatchTable.py 対局者一覧.xlsx result
 ```
+
+
+
+## exe化
+
+pyinstallerを利用してMatchTableUI.exeを作成すれば、pythonがインストールされていない環境でも実行できる。
+
+```shell
+$ pip install pyinstaller
+$ pyinstaller MatchTableUI.py --onefile --noconsole
+```
+
+distフォルダの中にあるMatchTableUI.exeを実行する。
+
