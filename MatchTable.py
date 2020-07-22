@@ -174,19 +174,20 @@ def read_excel(sheet, taisenNo, taisensha_info_list):
             taisensha_info_list.append(taisensha_info(row = row, name = name, kiryoku = kiryoku, score = score, taisen_rireki = taisen_rireki_info_list, sos = 0, sosos = 0, jyuni = 0))
 
 # 過去の対戦情報の矛盾をチェック
-def check_taisen_rireki(taisensha_info_list):
+def check_taisen_rireki(taisensha_info_list, last_taisen_no):
     error_flag = False
     for rec in taisensha_info_list:
         for i, senreki in enumerate(rec.taisen_rireki):
-            aite_info = get_aite_info(taisensha_info_list, senreki.name2)
-            if aite_info == None:
-                # 不戦勝などは対局者情報が取得できない。
-                continue
-            if len(aite_info.taisen_rireki) > i:
-                aite_senreki = aite_info.taisen_rireki[i]
-                if senreki.kekka == aite_senreki.kekka:
-                    print('{}回戦の {} vs {} 戦の結果が両者同じです。'.format(i+1, rec.name, aite_info.name))
-                    error_flag = True
+            if i < last_taisen_no:
+                aite_info = get_aite_info(taisensha_info_list, senreki.name2)
+                if aite_info == None:
+                    # 不戦勝などは対局者情報が取得できない。
+                    continue
+                if len(aite_info.taisen_rireki) > i:
+                    aite_senreki = aite_info.taisen_rireki[i]
+                    if senreki.kekka == aite_senreki.kekka:
+                        print('{}回戦の {} vs {} 戦の結果が両者同じです。'.format(i+1, rec.name, aite_info.name))
+                        error_flag = True
     return not error_flag
 
 # 対局者決定
@@ -201,7 +202,7 @@ def player_decision(taisenNo, execel_file_name):
     read_excel(sheet, taisenNo, taisensha_info_list)
 
     # 過去の対戦情報の矛盾をチェック
-    if check_taisen_rireki(taisensha_info_list) == False:
+    if check_taisen_rireki(taisensha_info_list, taisenNo - 1) == False:
         return
 
     # スコア・棋力・登録順にする
@@ -264,7 +265,7 @@ def write_result(execel_file_name):
     read_excel(sheet, taisenNo, taisensha_info_list)
 
     # 過去の対戦情報の矛盾をチェック
-    if check_taisen_rireki(taisensha_info_list) == False:
+    if check_taisen_rireki(taisensha_info_list, taisenNo) == False:
         return
 
     # SOSを計算
@@ -283,18 +284,17 @@ def write_result(execel_file_name):
 
     # 順位を計算
     taisensha_info_list_wk = []
-    jyuni_seq = 1
-    jyuni_count = 0
+    current_jyuni = 1
+    jyuni_count = 1
     old_rec = None
     for rec in taisensha_info_list:
         if old_rec != None:
             if old_rec.score != rec.score or old_rec.sos != rec.sos or old_rec.sosos != rec.sosos:
-                jyuni_seq += jyuni_count
+                current_jyuni += jyuni_count
+                jyuni_count = 1
             else:
                 jyuni_count += 1
-        else:
-            jyuni_count += 1
-        jyuni = jyuni_seq
+        jyuni = current_jyuni
         old_rec = rec
         new_rec = rec._replace(jyuni = jyuni)
         taisensha_info_list_wk.append(new_rec)
