@@ -30,7 +30,7 @@ JYUNI_col = 0
 
 # 参加者のデータ構造体定義
 taisen_rireki = namedtuple("taisen_rireki", "no name1 name2 kekka")
-taisensha_info = namedtuple("taisensha_info", "row name kiryoku score taisen_rireki sos sosos jyuni")
+taisensha_info = namedtuple("taisensha_info", "row name kiryoku score fusensho_count select_seq taisen_rireki sos sosos jyuni")
 taisen_aite_info = namedtuple("taisen_aite_info", "taisensha_info taikyoku_su index")
 
 # 棋力を取得(5D=5,1D=1,1K=0,2K=-1)
@@ -88,6 +88,15 @@ def get_score(taisen_rireki_list):
     score = 0
     for rec in taisen_rireki_list:
         if (rec.kekka == '〇'):
+            score += 1
+    return score
+
+# 不戦勝数を取得
+def get_fusensho_count(taisen_rireki_list):
+
+    score = 0
+    for rec in taisen_rireki_list:
+        if rec.kekka == '〇' and rec.name2 == '不戦勝':
             score += 1
     return score
 
@@ -170,8 +179,14 @@ def read_excel(sheet, taisenNo, taisensha_info_list):
             # 参加者の勝ち星を取得
             score = get_score(taisen_rireki_info_list)
 
+            # 参会者の不戦勝を取得
+            fusensho_count = get_fusensho_count(taisen_rireki_info_list)
+
+            # 選択順位
+            select_seq = random.randint(1, 100)
+
             # 参加者リストに追加
-            taisensha_info_list.append(taisensha_info(row = row, name = name, kiryoku = kiryoku, score = score, taisen_rireki = taisen_rireki_info_list, sos = 0, sosos = 0, jyuni = 0))
+            taisensha_info_list.append(taisensha_info(row = row, name = name, kiryoku = kiryoku, score = score, fusensho_count = fusensho_count, select_seq = select_seq, taisen_rireki = taisen_rireki_info_list, sos = 0, sosos = 0, jyuni = 0))
 
 # 過去の対戦情報の矛盾をチェック
 def check_taisen_rireki(taisensha_info_list, last_taisen_no):
@@ -205,8 +220,8 @@ def player_decision(taisenNo, execel_file_name):
     if check_taisen_rireki(taisensha_info_list, taisenNo - 1) == False:
         return
 
-    # スコア・棋力・登録順にする
-    taisensha_info_list = sorted(taisensha_info_list, key=lambda x: (x.score, x.kiryoku, x.row * -1), reverse=True)
+    # スコア・不戦勝数・選択順位・登録順にする
+    taisensha_info_list = sorted(taisensha_info_list, key=lambda x: (x.score, x.fusensho_count, x.select_seq, x.row * -1), reverse=True)
 
     # 対戦の組み合わせを計算
     for i, rec in enumerate(taisensha_info_list):
