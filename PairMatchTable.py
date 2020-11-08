@@ -4,9 +4,13 @@ import datetime
 import random
 from collections import namedtuple
 import zenhan
+import math
 
 # 性別でペアを組むならTrue
 seibetsu_flag = False
+
+# ペアを組むならTrue
+pair_kotei_flag = True
 
 # 乱数での棋力変動幅
 random_size = 3
@@ -36,7 +40,7 @@ SOSOS_col = 0
 JYUNI_col = 0
 
 # 参加者のデータ構造体定義
-taisensha_info = namedtuple("taisensha_info", "row random_row name kiryoku seibetsu score taisen_rireki sos sosos jyuni special")
+taisensha_info = namedtuple("taisensha_info", "row pair_no random_row name kiryoku seibetsu score taisen_rireki sos sosos jyuni special")
 # 参加者の対戦履歴のデータ構造体定義
 taisen_rireki = namedtuple("taisen_rireki", "no name pair_name taisensha_name1 taisensha_name2 kekka")
 # 対戦相手のデータ構造体定義
@@ -169,8 +173,20 @@ def get_taisen_kettei(taisensha_info_rec, pair_info_rec, taisensha_info_list, ta
 
     return mikettei_list2[0].taisensha_info
 
+# 固定ペアを取得
+def get_kotei_pair(taisensha_info_rec, taisensha_info_list):
+    for rec in taisensha_info_list:
+        if rec.name == taisensha_info_rec.name:
+            continue
+        if rec.pair_no == taisensha_info_rec.pair_no:
+            return rec
+    return None
+
 # ペアを決定
 def get_pair_kettei(taisensha_info_rec, taisensha_info_list, taisenNo, step):
+
+    if pair_kotei_flag:
+        return get_kotei_pair(taisensha_info_rec, taisensha_info_list)        
 
     # ペア未決定リスト取得
     mikettei_list = get_pair_mikettei_list(taisensha_info_rec, taisensha_info_list, taisenNo, step)
@@ -183,6 +199,9 @@ def get_pair_kettei(taisensha_info_rec, taisensha_info_list, taisenNo, step):
 
 # 対戦相手のペアを決定
 def get_pair_kettei2(taisensha_info_rec, pair_info_rec, taisen_aite_info_rec, taisensha_info_list, taisenNo, step):
+
+    if pair_kotei_flag:
+        return get_kotei_pair(taisen_aite_info_rec, taisensha_info_list)        
 
     # ペア未決定リスト取得
     mikettei_list = get_pair_mikettei_list2(taisensha_info_rec, pair_info_rec, taisen_aite_info_rec, taisensha_info_list, taisenNo, step)
@@ -269,11 +288,13 @@ def read_excel(sheet, taisenNo, taisensha_info_list):
 
     for row in range(start_sankasha_row, sheet.max_row + 1):
 
-        random_row = random.randint(-random_size, random_size)
-
         # 対局者名を取得
         name = sheet.cell(row, sankasha_name_col).value
         if name != None:
+
+            pair_no = math.floor((row - start_sankasha_row) / 2 + 1)
+
+            random_row = random.randint(-random_size, random_size)
 
             # 性別を取得
             seibetsu = sheet.cell(row, sankasha_name_col + 1).value
@@ -309,7 +330,7 @@ def read_excel(sheet, taisenNo, taisensha_info_list):
             score = get_score(taisen_rireki_info_list)
 
             # 参加者リストに追加
-            taisensha_info_list.append(taisensha_info(row = row, random_row = random_row, name = name, kiryoku = kiryoku, seibetsu = seibetsu, score = score, taisen_rireki = taisen_rireki_info_list, sos = 0, sosos = 0, jyuni = 0, special = special))
+            taisensha_info_list.append(taisensha_info(row = row, pair_no = pair_no, random_row = random_row, name = name, kiryoku = kiryoku, seibetsu = seibetsu, score = score, taisen_rireki = taisen_rireki_info_list, sos = 0, sosos = 0, jyuni = 0, special = special))
 
 # 過去の対戦情報の矛盾をチェック
 def check_taisen_rireki(taisensha_info_list, last_taisen_no):
@@ -492,7 +513,7 @@ def write_result(execel_file_name, save_execel_file_name):
     # 成績の列位置を取得
     result_col_info(sheet)
 
-    taisenNo = int((WIN_col - taisen_start_col) / 2)
+    taisenNo = int((WIN_col - taisen_start_col) / 4)
 
     taisensha_info_list = []
 
@@ -525,7 +546,10 @@ def write_result(execel_file_name, save_execel_file_name):
     for rec in taisensha_info_list:
         if old_rec != None:
             if old_rec.score != rec.score or old_rec.sos != rec.sos or old_rec.sosos != rec.sosos:
-                current_jyuni += jyuni_count
+                if pair_kotei_flag:
+                    current_jyuni += 1
+                else:
+                    current_jyuni += jyuni_count
                 jyuni_count = 1
             else:
                 jyuni_count += 1
@@ -550,14 +574,10 @@ def write_result(execel_file_name, save_execel_file_name):
 
 if __name__ == "__main__":
 
-    #excel_file_name = sys.argv[1]
-    #save_excel_file_name = sys.argv[1]
-    #cmd = sys.argv[2]
-
-    excel_file_name = 'ペア碁大会_対局者一覧_保存第０局.xlsx'
+    excel_file_name = 'ペア碁大会_対局者一覧_保存第３局.xlsx'
     save_execel_file_name = 'ペア碁大会_対局者一覧.xlsx'
     # 'result'もしくは対戦番号(1～)
-    cmd = '1'
+    cmd = 'result'
 
     if cmd == 'result':
         write_result(excel_file_name, save_execel_file_name)
