@@ -60,11 +60,14 @@ cmd_combobox.bind(
     lambda e: cmd_select_proc())
 cmd_combobox.grid(row=1, column=1, sticky=tk.W, padx=4)
 
-# 対局回数のEntry
+# 対局回数のラベル
 label3 = ttk.Label(input_frame, text='回戦数', padding=(5, 2), font=fontStyle)
 label3.grid(row=2, column=0, sticky=tk.W)
 
+# 対戦回数のバインド変数
 taikyoku_kaisu = tk.IntVar()
+
+# 対戦回数のテキストボックス
 taikyoku_kaisu_entry = ttk.Entry(
     input_frame,
     textvariable=taikyoku_kaisu,
@@ -72,25 +75,41 @@ taikyoku_kaisu_entry = ttk.Entry(
     font=fontStyle)
 taikyoku_kaisu_entry.grid(row=2, column=1, sticky=tk.W, padx=4)
 
-# 性別チェックボックスのバインド変数
+# 性別チェックのバインド変数
 seibetsu_flag = tk.BooleanVar()
 seibetsu_flag.set(True)
 
-# 性別チェックボックス
+# 性別チェックのチェックボックス
 check_box_seibetsu_flag = ttk.Checkbutton(input_frame, variable=seibetsu_flag, text='男女別にする', padding=(5, 4))
 check_box_seibetsu_flag.grid(row=3, column=1, sticky=tk.W)
 
-# ペア固定チェックボックスのバインド変数
+# ペア固定チェックのバインド変数
 pair_kotei_flag = tk.BooleanVar()
 pair_kotei_flag.set(False)
 
-# 性別チェックボックス
+# 性別チェックのチェックボックス
 check_box_pair_kotei_flag = ttk.Checkbutton(input_frame, variable=pair_kotei_flag, text='ペアを固定にする', padding=(5, 4))
 check_box_pair_kotei_flag.grid(row=4, column=1, sticky=tk.W)
 
+# 乱数での棋力変動幅のラベル
+label_kiryoku_random_val_size = ttk.Label(input_frame, text='乱数での棋力変動幅', padding=(5, 2), font=fontStyle)
+label_kiryoku_random_val_size.grid(row=5, column=0, sticky=tk.W)
+
+# 乱数での棋力変動幅のバインド変数
+kiryoku_random_val_size = tk.IntVar()
+kiryoku_random_val_size.set(3)
+
+# 乱数での棋力変動幅のテキストボックス
+entry_kiryoku_random_val_size = ttk.Entry(
+    input_frame,
+    textvariable=kiryoku_random_val_size,
+    width=4,
+    font=fontStyle)
+entry_kiryoku_random_val_size.grid(row=5, column=1, sticky=tk.W, padx=4)
+
 # ボタン配置フレーム作成
 button_frame = ttk.Frame(input_frame, padding=(0, 5))
-button_frame.grid(row=5, column=1, sticky=tk.W, padx=4)
+button_frame.grid(row=6, column=1, sticky=tk.W, padx=4)
 
 excel_run_button = tk.Button(
     button_frame, 
@@ -143,11 +162,13 @@ def match_table_proc():
     if excel_file_name.get() == '':
         messagebox.showinfo(title, "エクセルファイル名を入力してください。")
         return
+
+    proc = PairMatchTable.PairMatchTable(seibetsu_flag = seibetsu_flag.get(), pair_kotei_flag = pair_kotei_flag.get(), kiryoku_random_val_size = kiryoku_random_val_size.get())
+
     if cmd_select.get() == '成績作成':
         # 成績作成処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            proc = PairMatchTable.PairMatchTable(seibetsu_flag = seibetsu_flag.get(), pair_kotei_flag = pair_kotei_flag.get())
             proc.write_result(excel_file_name.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':
@@ -165,7 +186,6 @@ def match_table_proc():
         # 組み合わせ処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            proc = PairMatchTable.PairMatchTable(seibetsu_flag = seibetsu_flag.get(), pair_kotei_flag = pair_kotei_flag.get())
             proc.player_decision(taisenNo, excel_file_name.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':

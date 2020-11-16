@@ -42,7 +42,7 @@ class taisen_aite_info:
 
 # ペア碁マッチングクラス
 class PairMatchTable:
-    def __init__(self, seibetsu_flag, pair_kotei_flag):
+    def __init__(self, seibetsu_flag, pair_kotei_flag, kiryoku_random_val_size):
 
         # 性別でペアを組むならTrue
         self.seibetsu_flag = seibetsu_flag
@@ -54,7 +54,7 @@ class PairMatchTable:
         self.random_row_size = 100
 
         # 乱数での棋力変動幅
-        self.kiryoku_random_val_size = 3
+        self.kiryoku_random_val_size = kiryoku_random_val_size
 
         # タイトルの行位置
         self.title_row = 1
@@ -652,7 +652,7 @@ if __name__ == "__main__":
     # 'result'もしくは対戦番号(1～)
     cmd = '1'
 
-    proc = PairMatchTable(seibetsu_flag = True, pair_kotei_flag = False)
+    proc = PairMatchTable(seibetsu_flag = True, pair_kotei_flag = False, kiryoku_random_val_size = 3)
 
     if cmd == 'result':
         proc.write_result(excel_file_name, save_execel_file_name)
