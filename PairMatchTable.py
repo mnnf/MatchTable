@@ -491,7 +491,7 @@ class PairMatchTable:
         if aite_info == None:
             # 対戦相手が見つからなかったら不戦勝扱いにする
             # 対戦リストに登録
-            taisen_rireki_info = taisen_rireki(no = taisenNo, name = taisensha_info_rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
+            taisen_rireki_info = taisen_rireki(no = self.taisenNo, name = taisensha_info_rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
             taisensha_info_rec.taisen_rireki.append(taisen_rireki_info)
             return
 
@@ -501,24 +501,24 @@ class PairMatchTable:
         if aite_pair_rec == None:
             # 対戦相手のペアが見つからなかったら不戦勝扱いにする
             # 対戦リストに登録
-            taisen_rireki_info = taisen_rireki(no = taisenNo, name = taisensha_info_rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
+            taisen_rireki_info = taisen_rireki(no = self.taisenNo, name = taisensha_info_rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
             taisensha_info_rec.taisen_rireki.append(taisen_rireki_info)
             return
 
         # 対戦リストに登録
-        taisen_rireki_info = taisen_rireki(no = taisenNo, name = taisensha_info_rec.name, pair_name = pair_rec.name, taisensha_name1 = aite_info.name, taisensha_name2 = aite_pair_rec.name, kekka = None)
+        taisen_rireki_info = taisen_rireki(no = self.taisenNo, name = taisensha_info_rec.name, pair_name = pair_rec.name, taisensha_name1 = aite_info.name, taisensha_name2 = aite_pair_rec.name, kekka = None)
         taisensha_info_rec.taisen_rireki.append(taisen_rireki_info)
 
         # ペアの対局リストに登録
-        taisen_rireki_info = taisen_rireki(no = taisenNo, name = pair_rec.name, pair_name = taisensha_info_rec.name, taisensha_name1 = aite_info.name, taisensha_name2 = aite_pair_rec.name, kekka = None)
+        taisen_rireki_info = taisen_rireki(no = self.taisenNo, name = pair_rec.name, pair_name = taisensha_info_rec.name, taisensha_name1 = aite_info.name, taisensha_name2 = aite_pair_rec.name, kekka = None)
         pair_rec.taisen_rireki.append(taisen_rireki_info)
 
         # 対戦相手１の対局リストに登録
-        taisen_rireki_info = taisen_rireki(no = taisenNo, name = aite_info.name, pair_name = aite_pair_rec.name, taisensha_name1 = taisensha_info_rec.name, taisensha_name2 = pair_rec.name, kekka = None)
+        taisen_rireki_info = taisen_rireki(no = self.taisenNo, name = aite_info.name, pair_name = aite_pair_rec.name, taisensha_name1 = taisensha_info_rec.name, taisensha_name2 = pair_rec.name, kekka = None)
         aite_info.taisen_rireki.append(taisen_rireki_info)
 
         # 対戦相手２の対局リストに登録
-        taisen_rireki_info = taisen_rireki(no = taisenNo, name = aite_pair_rec.name, pair_name = aite_info.name, taisensha_name1 = taisensha_info_rec.name, taisensha_name2 = pair_rec.name, kekka = None)
+        taisen_rireki_info = taisen_rireki(no = self.taisenNo, name = aite_pair_rec.name, pair_name = aite_info.name, taisensha_name1 = taisensha_info_rec.name, taisensha_name2 = pair_rec.name, kekka = None)
         aite_pair_rec.taisen_rireki.append(taisen_rireki_info)
 
         return

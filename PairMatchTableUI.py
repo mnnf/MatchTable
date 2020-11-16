@@ -72,9 +72,25 @@ taikyoku_kaisu_entry = ttk.Entry(
     font=fontStyle)
 taikyoku_kaisu_entry.grid(row=2, column=1, sticky=tk.W, padx=4)
 
+# 性別チェックボックスのバインド変数
+seibetsu_flag = tk.BooleanVar()
+seibetsu_flag.set(True)
+
+# 性別チェックボックス
+check_box_seibetsu_flag = ttk.Checkbutton(input_frame, variable=seibetsu_flag, text='男女別にする', padding=(5, 4))
+check_box_seibetsu_flag.grid(row=3, column=1, sticky=tk.W)
+
+# ペア固定チェックボックスのバインド変数
+pair_kotei_flag = tk.BooleanVar()
+pair_kotei_flag.set(False)
+
+# 性別チェックボックス
+check_box_pair_kotei_flag = ttk.Checkbutton(input_frame, variable=pair_kotei_flag, text='ペアを固定にする', padding=(5, 4))
+check_box_pair_kotei_flag.grid(row=4, column=1, sticky=tk.W)
+
 # ボタン配置フレーム作成
 button_frame = ttk.Frame(input_frame, padding=(0, 5))
-button_frame.grid(row=3, column=1, sticky=tk.W, padx=4)
+button_frame.grid(row=5, column=1, sticky=tk.W, padx=4)
 
 excel_run_button = tk.Button(
     button_frame, 
@@ -131,7 +147,8 @@ def match_table_proc():
         # 成績作成処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            PairMatchTable.write_result(excel_file_name.get(), excel_file_name.get())
+            proc = PairMatchTable.PairMatchTable(seibetsu_flag = seibetsu_flag.get(), pair_kotei_flag = pair_kotei_flag.get())
+            proc.write_result(excel_file_name.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':
             messagebox.showinfo(title, "成績の作成が完了しました。")
@@ -148,7 +165,8 @@ def match_table_proc():
         # 組み合わせ処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            PairMatchTable.player_decision(taisenNo, excel_file_name.get(), excel_file_name.get())
+            proc = PairMatchTable.PairMatchTable(seibetsu_flag = seibetsu_flag.get(), pair_kotei_flag = pair_kotei_flag.get())
+            proc.player_decision(taisenNo, excel_file_name.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':
             messagebox.showinfo(title, "組み合わせの作成が完了しました。")
