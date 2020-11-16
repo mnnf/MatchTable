@@ -9,7 +9,7 @@ import math
 # 性別でペアを組むならTrue
 seibetsu_flag = False
 
-# ペアを組むならTrue
+# ペアを固定で組むならTrue
 pair_kotei_flag = True
 
 # 乱数での棋力変動幅
@@ -152,7 +152,7 @@ def get_pair_mikettei_list2(taisensha_info_rec, pair_info_rec, taisen_aite_info_
     return mikettei_list
 
 # 対戦者を決定
-def get_taisen_kettei(taisensha_info_rec, pair_info_rec, taisensha_info_list, taisenNo, step):
+def get_taisen_kettei_sub(taisensha_info_rec, pair_info_rec, taisensha_info_list, taisenNo, step):
 
     # 対戦者未決定リスト取得
     mikettei_list = get_taisen_mikettei_list(taisensha_info_rec, pair_info_rec, taisensha_info_list, taisenNo, step)
@@ -173,6 +173,18 @@ def get_taisen_kettei(taisensha_info_rec, pair_info_rec, taisensha_info_list, ta
 
     return mikettei_list2[0].taisensha_info
 
+# 対戦者を決定
+def get_taisen_kettei(taisensha_info_rec, pair_info_rec, taisensha_info_list, taisenNo):
+
+    aite_info = get_taisen_kettei_sub(taisensha_info_rec, pair_info_rec, taisensha_info_list, taisenNo, step = 1)
+
+    if aite_info != None:
+        return aite_info
+
+    aite_info = get_taisen_kettei_sub(taisensha_info_rec, pair_info_rec, taisensha_info_list, taisenNo, step = 2)
+
+    return aite_info
+
 # 固定ペアを取得
 def get_kotei_pair(taisensha_info_rec, taisensha_info_list):
     for rec in taisensha_info_list:
@@ -183,7 +195,7 @@ def get_kotei_pair(taisensha_info_rec, taisensha_info_list):
     return None
 
 # ペアを決定
-def get_pair_kettei(taisensha_info_rec, taisensha_info_list, taisenNo, step):
+def get_pair_kettei_sub(taisensha_info_rec, taisensha_info_list, taisenNo, step):
 
     if pair_kotei_flag:
         return get_kotei_pair(taisensha_info_rec, taisensha_info_list)        
@@ -197,8 +209,18 @@ def get_pair_kettei(taisensha_info_rec, taisensha_info_list, taisenNo, step):
 
     return mikettei_list[len(mikettei_list) - 1]
 
+# ペアを決定
+def get_pair_kettei(taisensha_info_rec, taisensha_info_list, taisenNo):
+
+    pair_rec = get_pair_kettei_sub(taisensha_info_rec, taisensha_info_list, taisenNo, step = 1)
+    if pair_rec != None:
+        return pair_rec
+
+    pair_rec = get_pair_kettei_sub(taisensha_info_rec, taisensha_info_list, taisenNo, step = 2)
+    return pair_rec
+
 # 対戦相手のペアを決定
-def get_pair_kettei2(taisensha_info_rec, pair_info_rec, taisen_aite_info_rec, taisensha_info_list, taisenNo, step):
+def get_aite_pair_kettei_sub(taisensha_info_rec, pair_info_rec, taisen_aite_info_rec, taisensha_info_list, taisenNo, step):
 
     if pair_kotei_flag:
         return get_kotei_pair(taisen_aite_info_rec, taisensha_info_list)        
@@ -211,6 +233,17 @@ def get_pair_kettei2(taisensha_info_rec, pair_info_rec, taisen_aite_info_rec, ta
         return None
 
     return mikettei_list[len(mikettei_list) - 1]
+
+# 対戦相手のペアを決定
+def get_aite_pair_kettei(taisensha_info_rec, pair_info_rec, taisen_aite_info_rec, taisensha_info_list, taisenNo):
+
+    aite_pair_rec = get_aite_pair_kettei_sub(taisensha_info_rec, pair_info_rec, taisen_aite_info_rec, taisensha_info_list, taisenNo, step = 1)
+    if aite_pair_rec != None:
+        return aite_pair_rec
+
+    aite_pair_rec = get_aite_pair_kettei_sub(taisensha_info_rec, pair_info_rec, taisen_aite_info_rec, taisensha_info_list, taisenNo, step = 2)
+
+    return aite_pair_rec
 
 # スコアを取得
 def get_score(taisen_rireki_list):
@@ -399,6 +432,62 @@ def get_handycap(taisensha_info_list, name1, name2, name3, name4):
 
     return '[' + str(handy_diff) + '] ' + msg
 
+# 対局者決定サブ
+def player_decision_sub(taisensha_info_rec, taisensha_info_list, taisenNo):
+
+    # 既に組み合わせされていたらスキップ
+    if len(taisensha_info_rec.taisen_rireki) >= taisenNo:
+        return
+
+    # ペアを決定
+    pair_rec = get_pair_kettei(taisensha_info_rec, taisensha_info_list, taisenNo)
+
+    if pair_rec == None:
+        # ペアが見つからなかったら不戦勝扱いにする
+        # 対戦リストに登録
+        taisen_rireki_info = taisen_rireki(no = taisenNo, name = taisensha_info_rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
+        taisensha_info_rec.taisen_rireki.append(taisen_rireki_info)
+        return
+
+    # 対戦者を決定
+    aite_info = get_taisen_kettei(taisensha_info_rec, pair_rec, taisensha_info_list, taisenNo)
+
+    # 対戦者なし
+    if aite_info == None:
+        # 対戦相手が見つからなかったら不戦勝扱いにする
+        # 対戦リストに登録
+        taisen_rireki_info = taisen_rireki(no = taisenNo, name = taisensha_info_rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
+        taisensha_info_rec.taisen_rireki.append(taisen_rireki_info)
+        return
+
+    # 対戦相手のペアを決定
+    aite_pair_rec = get_aite_pair_kettei(taisensha_info_rec, pair_rec, aite_info, taisensha_info_list, taisenNo)
+
+    if aite_pair_rec == None:
+        # 対戦相手のペアが見つからなかったら不戦勝扱いにする
+        # 対戦リストに登録
+        taisen_rireki_info = taisen_rireki(no = taisenNo, name = taisensha_info_rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
+        taisensha_info_rec.taisen_rireki.append(taisen_rireki_info)
+        return
+
+    # 対戦リストに登録
+    taisen_rireki_info = taisen_rireki(no = taisenNo, name = taisensha_info_rec.name, pair_name = pair_rec.name, taisensha_name1 = aite_info.name, taisensha_name2 = aite_pair_rec.name, kekka = None)
+    taisensha_info_rec.taisen_rireki.append(taisen_rireki_info)
+
+    # ペアの対局リストに登録
+    taisen_rireki_info = taisen_rireki(no = taisenNo, name = pair_rec.name, pair_name = taisensha_info_rec.name, taisensha_name1 = aite_info.name, taisensha_name2 = aite_pair_rec.name, kekka = None)
+    pair_rec.taisen_rireki.append(taisen_rireki_info)
+
+    # 対戦相手１の対局リストに登録
+    taisen_rireki_info = taisen_rireki(no = taisenNo, name = aite_info.name, pair_name = aite_pair_rec.name, taisensha_name1 = taisensha_info_rec.name, taisensha_name2 = pair_rec.name, kekka = None)
+    aite_info.taisen_rireki.append(taisen_rireki_info)
+
+    # 対戦相手２の対局リストに登録
+    taisen_rireki_info = taisen_rireki(no = taisenNo, name = aite_pair_rec.name, pair_name = aite_info.name, taisensha_name1 = taisensha_info_rec.name, taisensha_name2 = pair_rec.name, kekka = None)
+    aite_pair_rec.taisen_rireki.append(taisen_rireki_info)
+
+    return
+
 # 対局者決定
 def player_decision(taisenNo, execel_file_name, save_execel_file_name):
 
@@ -420,68 +509,7 @@ def player_decision(taisenNo, execel_file_name, save_execel_file_name):
     # 対戦の組み合わせを計算
     for i, rec in enumerate(taisensha_info_list):
 
-        # 既に組み合わせされていたらスキップ
-        if len(rec.taisen_rireki) >= taisenNo:
-            continue
-
-        # ペアを決定
-        pair_rec = get_pair_kettei(rec, taisensha_info_list, taisenNo, 1)
-        if pair_rec == None:
-            pair_rec = get_pair_kettei(rec, taisensha_info_list, taisenNo, 2)
-
-        if pair_rec == None:
-
-            # 不戦勝扱いにする
-            # 対戦リストに登録
-            taisen_rireki_info = taisen_rireki(no = taisenNo, name = rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
-            rec.taisen_rireki.append(taisen_rireki_info)
-
-        else:
-
-            # 対戦者を決定
-            aite_info = get_taisen_kettei(rec, pair_rec, taisensha_info_list, taisenNo, 1)
-            if aite_info == None:
-                aite_info = get_taisen_kettei(rec, pair_rec, taisensha_info_list, taisenNo, 2)
-
-            # 対戦者なし
-            if aite_info == None:
-
-                # 不戦勝扱いにする
-                # 対戦リストに登録
-                taisen_rireki_info = taisen_rireki(no = taisenNo, name = rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
-                rec.taisen_rireki.append(taisen_rireki_info)
-
-            else:
-
-                # 対戦相手のペアを決定
-                aite_pair_rec = get_pair_kettei2(rec, pair_rec, aite_info, taisensha_info_list, taisenNo, 1)
-                if aite_pair_rec == None:
-                    aite_pair_rec = get_pair_kettei2(rec, pair_rec, aite_info, taisensha_info_list, taisenNo, 2)
-
-                if aite_pair_rec == None:
-
-                    # 不戦勝扱いにする
-                    # 対戦リストに登録
-                    taisen_rireki_info = taisen_rireki(no = taisenNo, name = rec.name, pair_name = None, taisensha_name1 = '不戦勝', taisensha_name2 = None, kekka = '〇')
-                    rec.taisen_rireki.append(taisen_rireki_info)
-
-                else:
-
-                    # 対戦リストに登録
-                    taisen_rireki_info = taisen_rireki(no = taisenNo, name = rec.name, pair_name = pair_rec.name, taisensha_name1 = aite_info.name, taisensha_name2 = aite_pair_rec.name, kekka = None)
-                    rec.taisen_rireki.append(taisen_rireki_info)
-
-                    # ペアの対局リストに登録
-                    taisen_rireki_info = taisen_rireki(no = taisenNo, name = pair_rec.name, pair_name = rec.name, taisensha_name1 = aite_info.name, taisensha_name2 = aite_pair_rec.name, kekka = None)
-                    pair_rec.taisen_rireki.append(taisen_rireki_info)
-
-                    # 対戦相手１の対局リストに登録
-                    taisen_rireki_info = taisen_rireki(no = taisenNo, name = aite_info.name, pair_name = aite_pair_rec.name, taisensha_name1 = rec.name, taisensha_name2 = pair_rec.name, kekka = None)
-                    aite_info.taisen_rireki.append(taisen_rireki_info)
-
-                    # 対戦相手２の対局リストに登録
-                    taisen_rireki_info = taisen_rireki(no = taisenNo, name = aite_pair_rec.name, pair_name = aite_info.name, taisensha_name1 = rec.name, taisensha_name2 = pair_rec.name, kekka = None)
-                    aite_pair_rec.taisen_rireki.append(taisen_rireki_info)
+        player_decision_sub(rec, taisensha_info_list, taisenNo)
 
     # エクセルにペアと対戦者名とハンディを書き込み
     for rec in taisensha_info_list:
@@ -574,10 +602,10 @@ def write_result(execel_file_name, save_execel_file_name):
 
 if __name__ == "__main__":
 
-    excel_file_name = 'ペア碁大会_対局者一覧_保存第３局.xlsx'
+    excel_file_name = 'ペア碁大会_対局者一覧_Test.xlsx'
     save_execel_file_name = 'ペア碁大会_対局者一覧.xlsx'
     # 'result'もしくは対戦番号(1～)
-    cmd = 'result'
+    cmd = '3'
 
     if cmd == 'result':
         write_result(excel_file_name, save_execel_file_name)
