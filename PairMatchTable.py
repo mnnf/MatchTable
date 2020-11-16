@@ -8,10 +8,10 @@ import math
 
 # 参加者のデータ構造体定義
 class taisensha_info:
-    def __init__(self, row, pair_no, random_val, name, kiryoku, seibetsu, score, taisen_rireki, no_battles_cnt):
+    def __init__(self, row, random_row, pair_no, name, kiryoku, kiryoku_random_val, seibetsu, score, taisen_rireki, no_battles_cnt):
         self.row = row
         self.pair_no = pair_no
-        self.random_val = random_val
+        self.kiryoku_random_val = kiryoku_random_val
         self.name = name
         self.kiryoku = kiryoku
         self.seibetsu = seibetsu
@@ -21,6 +21,7 @@ class taisensha_info:
         self.sosos = 0
         self.jyuni = 0
         self.no_battles_cnt = no_battles_cnt
+        self.random_row = random_row
 
 # 参加者の対戦履歴のデータ構造体定義
 class taisen_rireki:
@@ -49,8 +50,11 @@ class PairMatchTable:
         # ペアを固定で組むならTrue
         self.pair_kotei_flag = pair_kotei_flag
 
+        # 乱数での最終順序
+        self.random_row_size = 100
+
         # 乱数での棋力変動幅
-        self.random_size = 3
+        self.kiryoku_random_val_size = 3
 
         # タイトルの行位置
         self.title_row = 1
@@ -134,6 +138,7 @@ class PairMatchTable:
         mikettei_list = []
 
         for rec in self.aite_pair_info_list:
+            # 自分自身は対象外
             if rec.name == taisensha_info_rec.name:
                 continue
             # 既に対戦番号(1～)以上の対局を実施した人は対象外
@@ -163,10 +168,13 @@ class PairMatchTable:
         mikettei_list = []
 
         for rec in self.aite_pair_info_list:
+            # 自分自身は対象外
             if rec.name == taisensha_info_rec.name:
                 continue
+            # 相手ペアは既に選択されているので対象外
             if rec.name == pair_info_rec.name:
                 continue
+            # 対戦相手は対象外
             if rec.name == taisen_aite_info_rec.name:
                 continue
             # 既に対戦番号(1～)以上の対局を実施した人は対象外
@@ -360,15 +368,20 @@ class PairMatchTable:
             name = sheet.cell(row, self.sankasha_name_col).value
             if name != None:
 
-                pair_no = math.floor((row - self.start_sankasha_row) / 2 + 1)
+                # ランダム数を取得
+                random_row = random.randint(1, self.random_row_size)
 
-                random_val = random.randint(-self.random_size, self.random_size)
+                # ペア固定時に使用するペア番号を取得
+                pair_no = math.floor((row - self.start_sankasha_row) / 2 + 1)
 
                 # 性別を取得
                 seibetsu = sheet.cell(row, self.sankasha_name_col + 1).value
 
                 # 棋力を取得
                 kiryoku = self.get_kiryoku(sheet.cell(row, self.sankasha_name_col + 2).value)
+
+                # 棋力ランダム数を取得
+                kiryoku_random_val = random.randint(-self.kiryoku_random_val_size, self.kiryoku_random_val_size)
 
                 no_battles_cnt = 0
 
@@ -398,7 +411,7 @@ class PairMatchTable:
                 score = self.get_score(taisen_rireki_info_list)
 
                 # 参加者リストに追加
-                self.taisensha_info_list.append(taisensha_info(row = row, pair_no = pair_no, random_val = random_val, name = name, kiryoku = kiryoku, seibetsu = seibetsu, score = score, taisen_rireki = taisen_rireki_info_list, no_battles_cnt = no_battles_cnt))
+                self.taisensha_info_list.append(taisensha_info(row = row, random_row = random_row, pair_no = pair_no, name = name, kiryoku = kiryoku, kiryoku_random_val = kiryoku_random_val, seibetsu = seibetsu, score = score, taisen_rireki = taisen_rireki_info_list, no_battles_cnt = no_battles_cnt))
 
     # 過去の対戦情報の矛盾をチェック
     def check_taisen_rireki(self, last_taisen_no):
@@ -541,10 +554,10 @@ class PairMatchTable:
             return
 
         # 不戦勝数、勝ち数、棋力＋ランダム数、登録順にマッチングする
-        self.taisensha_info_list = sorted(self.taisensha_info_list, key=lambda x: (x.no_battles_cnt, x.score, x.kiryoku + x.random_val, x.row * -1), reverse=True)
+        self.taisensha_info_list = sorted(self.taisensha_info_list, key=lambda x: (x.no_battles_cnt, x.score, x.kiryoku + x.kiryoku_random_val, x.random_row), reverse=True)
 
         # 相手ペアは不戦勝数、勝ち数(降順)、棋力(降順)＋ランダム数、登録順で見つける
-        self.aite_pair_info_list = sorted(self.taisensha_info_list, key=lambda x: (x.no_battles_cnt, x.score * -1, x.kiryoku * -1 + x.random_val, x.row * -1), reverse=True)
+        self.aite_pair_info_list = sorted(self.taisensha_info_list, key=lambda x: (x.score * -1, (x.kiryoku + x.kiryoku_random_val) * -1, x.random_row), reverse=True)
 
         # 対戦の組み合わせを計算
         for taisensha_info_rec in self.taisensha_info_list:
