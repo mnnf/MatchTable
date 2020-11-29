@@ -245,7 +245,7 @@ class PairMatchTable:
     def get_pair_kettei_sub(self, taisensha_info_rec, step):
 
         if self.pair_kotei_flag:
-            return get_kotei_pair(taisensha_info_rec)
+            return self.get_kotei_pair(taisensha_info_rec)
 
         # ペア未決定リスト取得
         mikettei_list = self.get_pair_mikettei_list(taisensha_info_rec, step)
