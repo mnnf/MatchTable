@@ -29,12 +29,12 @@ excel_file_name = tk.StringVar()
 excel_file_name_entry = ttk.Entry(
     input_frame,
     textvariable=excel_file_name,
-    width=60,    
+    width=60,
     font=fontStyle)
 excel_file_name_entry.grid(row=0, column=1, sticky=tk.W, padx=4)
 
 excel_file_name_button = tk.Button(
-    input_frame, 
+    input_frame,
     text='参照',
     command=lambda: excel_file_name_select_proc(),
     font=fontStyle,
@@ -48,15 +48,15 @@ label2.grid(row=1, column=0, sticky=tk.W)
 cmds = ['組み合わせ作成', '成績作成']
 cmd_select = tk.StringVar()
 cmd_combobox = ttk.Combobox(
-    input_frame, 
-    textvariable=cmd_select, 
-    values=cmds, 
-    width=20, 
+    input_frame,
+    textvariable=cmd_select,
+    values=cmds,
+    width=20,
     state='readonly',
     font=fontStyle)
 cmd_combobox.set(cmds[0])
 cmd_combobox.bind(
-    '<<ComboboxSelected>>', 
+    '<<ComboboxSelected>>',
     lambda e: cmd_select_proc())
 cmd_combobox.grid(row=1, column=1, sticky=tk.W, padx=4)
 
@@ -77,7 +77,7 @@ button_frame = ttk.Frame(input_frame, padding=(0, 5))
 button_frame.grid(row=3, column=1, sticky=tk.W, padx=4)
 
 excel_run_button = tk.Button(
-    button_frame, 
+    button_frame,
     text='エクセルで見る',
     command=lambda: execute_excel_proc(),
     font=fontStyle,
@@ -85,7 +85,7 @@ excel_run_button = tk.Button(
 excel_run_button.pack(side=tk.LEFT, padx=4)
 
 match_table_button = tk.Button(
-    button_frame, 
+    button_frame,
     text='コマンド処理を行う',
     command=lambda: match_table_proc(),
     font=fontStyle,
@@ -93,8 +93,8 @@ match_table_button = tk.Button(
 match_table_button.pack(side=tk.LEFT, padx=4)
 
 quit_button = tk.Button(
-    button_frame, 
-    text='終了', 
+    button_frame,
+    text='終了',
     command=lambda: quit_proc(),
     font=fontStyle,
     width=14)
@@ -127,11 +127,14 @@ def match_table_proc():
     if excel_file_name.get() == '':
         messagebox.showinfo(title, "エクセルファイル名を入力してください。")
         return
+
+    proc = MatchTable.MatchTable()
+
     if cmd_select.get() == '成績作成':
         # 成績作成処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            MatchTable.write_result(excel_file_name.get())
+            proc.write_result(excel_file_name.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':
             messagebox.showinfo(title, "成績の作成が完了しました。")
@@ -148,7 +151,7 @@ def match_table_proc():
         # 組み合わせ処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            MatchTable.player_decision(taisenNo, excel_file_name.get())
+            proc.player_decision(taisenNo, excel_file_name.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':
             messagebox.showinfo(title, "組み合わせの作成が完了しました。")
