@@ -3,6 +3,7 @@ import openpyxl
 import datetime
 import random
 from collections import namedtuple
+import zenhan
 
 # 参加者のデータ構造体定義
 class taisensha_info:
@@ -61,6 +62,11 @@ class MatchTable:
         # 順位の列位置
         self.JYUNI_col = 0
 
+        # 参加者リスト
+        self.taisensha_info_list = []
+
+        # 対戦番号(１～）
+        self.taisenNo = 0
 
     # 棋力を取得(5D=5,1D=1,1K=0,2K=-1)
     def get_kiryoku(self, dat):
@@ -72,23 +78,23 @@ class MatchTable:
         return kiryoku
 
     # 対戦未決定リスト取得
-    def get_taisen_mikettei_list(self, taisensha_info_rec, taisensha_info_list, taisenNo):
+    def get_taisen_mikettei_list(self, taisensha_info_rec):
 
         mikettei_list = []
 
-        for rec in taisensha_info_list:
+        for rec in self.taisensha_info_list:
             if rec.name == taisensha_info_rec.name:
                 continue
-            if len(rec.taisen_rireki) < taisenNo:
+            if len(rec.taisen_rireki) < self.taisenNo:
                 mikettei_list.append(rec)
 
         return mikettei_list
 
     # 対戦未決定リスト取得
-    def get_taisen_mikettei_list2(self, taisensha_info_rec, taisensha_info_list, taisenNo):
+    def get_taisen_mikettei_list2(self, taisensha_info_rec):
 
         # 対戦者未決定リスト取得
-        mikettei_list = self.get_taisen_mikettei_list(taisensha_info_rec, taisensha_info_list, taisenNo)
+        mikettei_list = self.get_taisen_mikettei_list(taisensha_info_rec)
 
         # 対戦者なし
         if len(mikettei_list) == 0:
@@ -138,29 +144,29 @@ class MatchTable:
         return taikyoku_su
 
     # 対戦相手の対戦者情報を取得
-    def get_aite_info(self, taisensha_info_list, name):
-        for rec in taisensha_info_list:
+    def get_aite_info(self, name):
+        for rec in self.taisensha_info_list:
             if rec.name == name:
                 return rec
         return None
 
     # SOSを計算
-    def get_sos(self, taisensha_info_list, taisensha_info_rec):
+    def get_sos(self, taisensha_info_rec):
         sos = 0
         for rec in taisensha_info_rec.taisen_rireki:
-            aite_info = self.get_aite_info(taisensha_info_list, rec.name2)
+            aite_info = self.get_aite_info(rec.name2)
             if aite_info != None:
                 score = self.get_score(aite_info.taisen_rireki)
                 sos += score
         return sos
 
     # SOSOSを計算
-    def get_sosos(self, taisensha_info_list, taisensha_info_rec):
+    def get_sosos(self, taisensha_info_rec):
         sosos = 0
         for rec in taisensha_info_rec.taisen_rireki:
-            aite_info = self.get_aite_info(taisensha_info_list, rec.name2)
+            aite_info = self.get_aite_info(rec.name2)
             if aite_info != None:
-                sos = self.get_sos(taisensha_info_list, aite_info)
+                sos = self.get_sos(aite_info)
                 sosos += sos
         return sosos
 
@@ -182,7 +188,7 @@ class MatchTable:
                 JYUNI_col = col
 
     # エクセルから参加者と過去の対戦情報を読み取り
-    def read_excel(self, sheet, taisenNo, taisensha_info_list):
+    def read_excel(self, sheet):
 
         for row in range(self.start_sankasha_row, sheet.max_row + 1):
 
@@ -196,11 +202,11 @@ class MatchTable:
                 # 対戦履歴情報取得
                 taisen_rireki_info_list = []
 
-                for taisenNo_loop in range(1, taisenNo + 1):
+                for taisenNo_loop in range(1, self.taisenNo + 1):
                     # 対戦者の名前と結果を取得
-                    col = self.taisen_start_col + (taisenNo_loop - 1) * 2
+                    col = self.taisen_start_col + (taisenNo_loop - 1) * 3
                     taisensha_name = sheet.cell(row, col).value
-                    kekka = sheet.cell(row, col + 1).value
+                    kekka = sheet.cell(row, col + 2).value
                     if taisensha_name != None:
                         taisen_rireki_info = taisen_rireki(no = taisenNo_loop, name1 = name, name2 = taisensha_name, kekka = kekka)
                         taisen_rireki_info_list.append(taisen_rireki_info)
@@ -215,15 +221,15 @@ class MatchTable:
                 random_seq = random.randint(1, 100)
 
                 # 参加者リストに追加
-                taisensha_info_list.append(taisensha_info(row = row, name = name, kiryoku = kiryoku, score = score, fusensho_count = fusensho_count, random_seq = random_seq, taisen_rireki = taisen_rireki_info_list, sos = 0, sosos = 0, jyuni = 0))
+                self.taisensha_info_list.append(taisensha_info(row = row, name = name, kiryoku = kiryoku, score = score, fusensho_count = fusensho_count, random_seq = random_seq, taisen_rireki = taisen_rireki_info_list, sos = 0, sosos = 0, jyuni = 0))
 
     # 過去の対戦情報の矛盾をチェック
-    def check_taisen_rireki(self, taisensha_info_list, last_taisen_no):
+    def check_taisen_rireki(self, last_taisen_no):
         error_flag = False
-        for rec in taisensha_info_list:
+        for rec in self.taisensha_info_list:
             for i, senreki in enumerate(rec.taisen_rireki):
                 if i < last_taisen_no:
-                    aite_info = self.get_aite_info(taisensha_info_list, senreki.name2)
+                    aite_info = self.get_aite_info(senreki.name2)
                     if aite_info == None:
                         # 不戦勝などは対局者情報が取得できない。
                         continue
@@ -234,39 +240,85 @@ class MatchTable:
                             error_flag = True
         return not error_flag
 
+    # ハンディキャップ取得
+    def get_handycap(self, name1, name2):
+
+        kiryoku1 = self.get_aite_info(name1).kiryoku
+
+        kiryoku2 = self.get_aite_info(name2).kiryoku
+
+        handy_diff = kiryoku1 - kiryoku2
+
+        msg = ''
+        if handy_diff == 0:
+            msg = '互先'
+        else:
+            point = (handy_diff / 0.5)
+            if point > 0:
+                if point >= 19:
+                    point = 18
+                point -= 1
+                oki_ishi = point // 2 + 1
+                komi = 0
+                if (point % 2) == 1:
+                    komi = -6
+                msg = '向 '
+                if oki_ishi > 1:
+                    msg = msg + zenhan.h2z(str.format('{:.1g}', oki_ishi)) + '子'
+                else:
+                    msg = msg + '先'
+            else:
+                point = point * -1
+                if point >= 19:
+                    point = 18
+                point -= 1
+                oki_ishi = point // 2 + 1
+                komi = 0
+                if (point % 2) == 1:
+                    komi = -6
+                msg = ''
+                if oki_ishi > 1:
+                    msg = msg + zenhan.h2z(str.format('{:.1g}', oki_ishi)) + '子'
+                else:
+                    msg = msg + '先'
+
+        return msg
+
     # 対局者決定
     def player_decision(self, taisenNo, execel_file_name, save_execel_file_name):
+
+        self.taisenNo = taisenNo
 
         wb = openpyxl.load_workbook(execel_file_name)
         sheet = wb.active
 
-        taisensha_info_list = []
+        self.taisensha_info_list = []
 
         # エクセルから参加者と過去の対戦情報を読み取り
-        self.read_excel(sheet, taisenNo, taisensha_info_list)
+        self.read_excel(sheet)
 
         # 過去の対戦情報の矛盾をチェック
-        if self.check_taisen_rireki(taisensha_info_list, taisenNo - 1) == False:
+        if self.check_taisen_rireki(self.taisenNo - 1) == False:
             return
 
         # スコア・不戦勝数・棋力・ランダム順位・登録順にする
-        taisensha_info_list = sorted(taisensha_info_list, key=lambda x: (x.score, x.fusensho_count, x.kiryoku, x.random_seq, x.row * -1), reverse=True)
+        self.taisensha_info_list = sorted(self.taisensha_info_list, key=lambda x: (x.score, x.fusensho_count, x.kiryoku, x.random_seq, x.row * -1), reverse=True)
 
         # 対戦の組み合わせを計算
-        for i, rec in enumerate(taisensha_info_list):
+        for i, rec in enumerate(self.taisensha_info_list):
 
             # 既に組み合わせされていたらスキップ
-            if len(rec.taisen_rireki) >= taisenNo:
+            if len(rec.taisen_rireki) >= self.taisenNo:
                 continue
 
             # 対戦者未決定リスト取得
-            mikettei_list = self.get_taisen_mikettei_list2(rec, taisensha_info_list, taisenNo)
+            mikettei_list = self.get_taisen_mikettei_list2(rec)
 
             # 対戦者なし
             if len(mikettei_list) == 0:
                 # 不戦勝扱いにする
                 # 対戦リストに登録
-                taisen_rireki_info = taisen_rireki(taisenNo, rec.name, '不戦勝', '〇')
+                taisen_rireki_info = taisen_rireki(self.taisenNo, rec.name, '不戦勝', '〇')
                 rec.taisen_rireki.append(taisen_rireki_info)
             else:
 
@@ -274,20 +326,24 @@ class MatchTable:
                 aite_info = mikettei_list[0]
 
                 # 対戦リストに登録
-                taisen_rireki_info = taisen_rireki(taisenNo, rec.name, aite_info.name, None)
+                taisen_rireki_info = taisen_rireki(self.taisenNo, rec.name, aite_info.name, None)
                 rec.taisen_rireki.append(taisen_rireki_info)
 
-                taisen_rireki_info = taisen_rireki(taisenNo, aite_info.name, rec.name, None)
+                taisen_rireki_info = taisen_rireki(self.taisenNo, aite_info.name, rec.name, None)
                 aite_info.taisen_rireki.append(taisen_rireki_info)
 
-        # エクセルに対戦者名を書き込み
-        for rec in taisensha_info_list:
-            if len(rec.taisen_rireki) >= taisenNo:
-                senreki = rec.taisen_rireki[taisenNo - 1]
-                col = self.taisen_start_col + (taisenNo - 1) * 2
+        # エクセルに対戦者名とハンディを書き込み
+        for rec in self.taisensha_info_list:
+            if len(rec.taisen_rireki) >= self.taisenNo:
+                senreki = rec.taisen_rireki[self.taisenNo - 1]
+                col = self.taisen_start_col + (self.taisenNo - 1) * 3
+                # 対戦相手
                 sheet.cell(rec.row, col).value = senreki.name2
+                # ハンディ
+                sheet.cell(rec.row, col + 1).value = self.get_handycap(senreki.name1, senreki.name2)
+                # 成績(不戦勝の場合)
                 if senreki.kekka != None:
-                    col = self.taisen_start_col + (taisenNo - 1) * 2 + 1
+                    col = self.taisen_start_col + (self.taisenNo - 1) * 3 + 2
                     sheet.cell(rec.row, col).value = senreki.kekka
 
         wb.save(save_execel_file_name)
@@ -301,32 +357,32 @@ class MatchTable:
         # 成績の列位置を取得
         self.result_col_info(sheet)
 
-        taisenNo = int((WIN_col - self.taisen_start_col) / 2)
+        self.taisenNo = int((WIN_col - self.taisen_start_col) / 3)
 
-        taisensha_info_list = []
+        self.taisensha_info_list = []
 
         # エクセルから参加者と過去の対戦情報を読み取り
-        self.read_excel(sheet, taisenNo, taisensha_info_list)
+        self.read_excel(sheet)
 
         # 過去の対戦情報の矛盾をチェック
-        if self.check_taisen_rireki(taisensha_info_list, taisenNo) == False:
+        if self.check_taisen_rireki(self.taisenNo) == False:
             return
 
         # SOSを計算
-        for rec in taisensha_info_list:
+        for rec in self.taisensha_info_list:
             # SOS
-            rec.sos = self.get_sos(taisensha_info_list, rec)
+            rec.sos = self.get_sos(rec)
             # SOSOS
-            rec.sosos = self.get_sosos(taisensha_info_list, rec)
+            rec.sosos = self.get_sosos(rec)
 
         # スコア・SOS・SOSOS順にする
-        taisensha_info_list = sorted(taisensha_info_list, key=lambda x: (x.score, x.sos, x.sosos), reverse=True)
+        self.taisensha_info_list = sorted(self.taisensha_info_list, key=lambda x: (x.score, x.sos, x.sosos), reverse=True)
 
         # 順位を計算
         current_jyuni = 1
         jyuni_count = 1
         old_rec = None
-        for rec in taisensha_info_list:
+        for rec in self.taisensha_info_list:
             if old_rec != None:
                 if old_rec.score != rec.score or old_rec.sos != rec.sos or old_rec.sosos != rec.sosos:
                     current_jyuni += jyuni_count
@@ -337,7 +393,7 @@ class MatchTable:
             old_rec = rec
 
         # 結果を書き込み
-        for rec in taisensha_info_list:
+        for rec in self.taisensha_info_list:
             # 勝ち数
             sheet.cell(rec.row, WIN_col).value = rec.score
             # SOS
@@ -351,8 +407,8 @@ class MatchTable:
 
 if __name__ == "__main__":
 
-    excel_file_name = '対局者一覧サンプル.xlsx'
-    save_execel_file_name = '対局者一覧サンプル_結果.xlsx'
+    excel_file_name = '対局者一覧サンプル_結果4.xlsx'
+    save_execel_file_name = '対局者一覧サンプル_結果5.xlsx'
     # 'result'もしくは対戦番号(1～)
     cmd = 'result'
 
