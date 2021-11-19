@@ -29,10 +29,12 @@ class taisen_rireki:
 
 # 対戦相手のデータ構造体定義
 class taisen_aite_info:
-    def __init__(self, taisensha_info, taikyoku_su, index):
+    def __init__(self, taisensha_info, taikyoku_su, index, kiryoku_diff, score_diff):
         self.taisensha_info = taisensha_info
         self.taikyoku_su = taikyoku_su
         self.index = index
+        self.kiryoku_diff = kiryoku_diff
+        self.score_diff = score_diff
 
 # マッチングクラス
 class MatchTable:
@@ -105,10 +107,10 @@ class MatchTable:
         for index, aite_info in enumerate(mikettei_list):
             # 過去対戦数を取得
             taikyoku_su = self.get_taikyoku_su(taisensha_info_rec.taisen_rireki, aite_info.name)
-            mikettei_list2.append(taisen_aite_info(aite_info, taikyoku_su, index))
+            mikettei_list2.append(taisen_aite_info(aite_info, taikyoku_su, index, kiryoku_diff = abs(taisensha_info_rec.kiryoku - aite_info.kiryoku), score_diff = abs(taisensha_info_rec.score - aite_info.score)))
 
-        # 対戦回数・登録順にする
-        mikettei_list2 = sorted(mikettei_list2, key=lambda x: (x.taikyoku_su, x.index))
+        # 対戦相手を選ぶのに対戦回数が少なく、スコア差が少なく、棋力差が少ない、あと残りは初期のソート順にする
+        mikettei_list2 = sorted(mikettei_list2, key=lambda x: (x.taikyoku_su, x.score_diff, x.kiryoku_diff, x.index))
 
         mikettei_list3 = []
 
@@ -214,7 +216,7 @@ class MatchTable:
                 # 参加者の勝ち星を取得
                 score = self.get_score(taisen_rireki_info_list)
 
-                # 参会者の不戦勝を取得
+                # 参加者の不戦勝を取得
                 fusensho_count = self.get_fusensho_count(taisen_rireki_info_list)
 
                 # ランダム順位
@@ -242,6 +244,9 @@ class MatchTable:
 
     # ハンディキャップ取得
     def get_handycap(self, name1, name2):
+
+        if name2 == '不戦勝':
+            return ''
 
         kiryoku1 = self.get_aite_info(name1).kiryoku
 
@@ -305,7 +310,7 @@ class MatchTable:
         self.taisensha_info_list = sorted(self.taisensha_info_list, key=lambda x: (x.score, x.fusensho_count, x.kiryoku, x.random_seq, x.row * -1), reverse=True)
 
         # 対戦の組み合わせを計算
-        for i, rec in enumerate(self.taisensha_info_list):
+        for rec in self.taisensha_info_list:
 
             # 既に組み合わせされていたらスキップ
             if len(rec.taisen_rireki) >= self.taisenNo:
@@ -407,10 +412,10 @@ class MatchTable:
 
 if __name__ == "__main__":
 
-    excel_file_name = '対局者一覧サンプル_結果4.xlsx'
-    save_execel_file_name = '対局者一覧サンプル_結果5.xlsx'
+    excel_file_name = '対局者一覧サンプル.xlsx'
+    save_execel_file_name = '対局者一覧サンプル_結果1.xlsx'
     # 'result'もしくは対戦番号(1～)
-    cmd = 'result'
+    cmd = '1'
 
     proc = MatchTable()
 
