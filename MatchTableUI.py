@@ -45,7 +45,7 @@ excel_file_name_button.grid(row=0, column=2, sticky=tk.W, padx=4)
 label2 = ttk.Label(input_frame, text='コマンド', padding=(5, 2), font=fontStyle)
 label2.grid(row=1, column=0, sticky=tk.W)
 
-cmds = ['組み合わせ作成(登録順で組み合わせ）', '組み合わせ作成(スコア・不戦勝数・棋力・ランダム順位・登録順で組み合わせ）', '成績作成']
+cmds = ['組み合わせ作成(登録順で組み合わせ）', '組み合わせ作成(スコア・棋力差・初期ソート順で組み合わせ）', '成績作成']
 cmd_select = tk.StringVar()
 cmd_combobox = ttk.Combobox(
     input_frame,
