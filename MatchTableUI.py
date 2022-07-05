@@ -29,7 +29,7 @@ excel_file_name = tk.StringVar()
 excel_file_name_entry = ttk.Entry(
     input_frame,
     textvariable=excel_file_name,
-    width=60,
+    width=72,
     font=fontStyle)
 excel_file_name_entry.grid(row=0, column=1, sticky=tk.W, padx=4)
 
@@ -45,13 +45,13 @@ excel_file_name_button.grid(row=0, column=2, sticky=tk.W, padx=4)
 label2 = ttk.Label(input_frame, text='コマンド', padding=(5, 2), font=fontStyle)
 label2.grid(row=1, column=0, sticky=tk.W)
 
-cmds = ['組み合わせ作成', '成績作成']
+cmds = ['組み合わせ作成(登録順で組み合わせ）', '組み合わせ作成(スコア・不戦勝数・棋力・ランダム順位・登録順で組み合わせ）', '成績作成']
 cmd_select = tk.StringVar()
 cmd_combobox = ttk.Combobox(
     input_frame,
     textvariable=cmd_select,
     values=cmds,
-    width=20,
+    width=70,
     state='readonly',
     font=fontStyle)
 cmd_combobox.set(cmds[0])
@@ -142,7 +142,26 @@ def match_table_proc():
             messagebox.showinfo(title, "成績の作成でエラーが発生しました。エラー内容は以下の通りです。\n\n{}".format(contents))
         execute_excel_proc()
 
+    elif cmd_select.get() == '組み合わせ作成(登録順で組み合わせ）':
+
+        # 組み合わせ作成
+        taisenNo = taikyoku_kaisu.get()
+        if taisenNo < 1:
+            messagebox.showinfo(title, "回戦数を入力してください。")
+            return
+        # 組み合わせ処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
+        with io.StringIO() as s:
+            sys.stdout = s
+            proc.player_decision2(taisenNo, excel_file_name.get(), excel_file_name.get())
+            contents = s.getvalue()
+        if contents == '':
+            messagebox.showinfo(title, "組み合わせの作成が完了しました。")
+        else:
+            messagebox.showinfo(title, "組み合わせの作成でエラーが発生しました。エラー内容は以下の通りです。\n\n{}".format(contents))
+        execute_excel_proc()
+
     else:
+
         # 組み合わせ作成
         taisenNo = taikyoku_kaisu.get()
         if taisenNo < 1:

@@ -119,6 +119,23 @@ class MatchTable:
 
         return mikettei_list3
 
+    # 対戦未決定リスト取得(登録順)
+    def get_taisen_mikettei_list3(self, taisensha_info_rec):
+
+        mikettei_list = []
+
+        index = taisensha_info_rec.row - self.start_sankasha_row
+        amari = index % 2
+        if amari == 0:
+            # 下から取得
+            if len(self.taisensha_info_list) > (index + 1):
+                mikettei_list.append(self.taisensha_info_list[index + 1])
+        else:
+            # 上から取得
+            mikettei_list.append(self.taisensha_info_list[index - 1])
+
+        return mikettei_list
+
     # スコアを取得
     def get_score(self, taisen_rireki_list):
 
@@ -318,6 +335,70 @@ class MatchTable:
 
             # 対戦者未決定リスト取得
             mikettei_list = self.get_taisen_mikettei_list2(rec)
+
+            # 対戦者なし
+            if len(mikettei_list) == 0:
+                # 不戦勝扱いにする
+                # 対戦リストに登録
+                taisen_rireki_info = taisen_rireki(self.taisenNo, rec.name, '不戦勝', '〇')
+                rec.taisen_rireki.append(taisen_rireki_info)
+            else:
+
+                # 対戦相手決定
+                aite_info = mikettei_list[0]
+
+                # 対戦リストに登録
+                taisen_rireki_info = taisen_rireki(self.taisenNo, rec.name, aite_info.name, None)
+                rec.taisen_rireki.append(taisen_rireki_info)
+
+                taisen_rireki_info = taisen_rireki(self.taisenNo, aite_info.name, rec.name, None)
+                aite_info.taisen_rireki.append(taisen_rireki_info)
+
+        # エクセルに対戦者名とハンディを書き込み
+        for rec in self.taisensha_info_list:
+            if len(rec.taisen_rireki) >= self.taisenNo:
+                senreki = rec.taisen_rireki[self.taisenNo - 1]
+                col = self.taisen_start_col + (self.taisenNo - 1) * 3
+                # 対戦相手
+                sheet.cell(rec.row, col).value = senreki.name2
+                # ハンディ
+                sheet.cell(rec.row, col + 1).value = self.get_handycap(senreki.name1, senreki.name2)
+                # 成績(不戦勝の場合)
+                if senreki.kekka != None:
+                    col = self.taisen_start_col + (self.taisenNo - 1) * 3 + 2
+                    sheet.cell(rec.row, col).value = senreki.kekka
+
+        wb.save(save_execel_file_name)
+
+    # 対局者決定(登録順)
+    def player_decision2(self, taisenNo, execel_file_name, save_execel_file_name):
+
+        self.taisenNo = taisenNo
+
+        wb = openpyxl.load_workbook(execel_file_name)
+        sheet = wb.active
+
+        self.taisensha_info_list = []
+
+        # エクセルから参加者と過去の対戦情報を読み取り
+        self.read_excel(sheet)
+
+        # 過去の対戦情報の矛盾をチェック
+        if self.check_taisen_rireki(self.taisenNo - 1) == False:
+            return
+
+        # 登録順にする
+        self.taisensha_info_list = sorted(self.taisensha_info_list, key=lambda x: (x.row), reverse=False)
+
+        # 対戦の組み合わせを計算
+        for rec in self.taisensha_info_list:
+
+            # 既に組み合わせされていたらスキップ
+            if len(rec.taisen_rireki) >= self.taisenNo:
+                continue
+
+            # 対戦者未決定リスト取得
+            mikettei_list = self.get_taisen_mikettei_list3(rec)
 
             # 対戦者なし
             if len(mikettei_list) == 0:
