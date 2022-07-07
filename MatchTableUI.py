@@ -8,6 +8,7 @@ from tkinter import filedialog
 import tkinter.font as tkFont
 import subprocess
 import MatchTable
+import openpyxl
 
 title = '対局くん'
 
@@ -41,9 +42,23 @@ excel_file_name_button = tk.Button(
     width=6)
 excel_file_name_button.grid(row=0, column=2, sticky=tk.W, padx=4)
 
-# コマンドのCombobox
-label2 = ttk.Label(input_frame, text='コマンド', padding=(5, 2), font=fontStyle)
+# シート名指定のEntry
+label2 = ttk.Label(input_frame, text='シート名', padding=(5, 2), font=fontStyle)
 label2.grid(row=1, column=0, sticky=tk.W)
+
+sheetname_select = tk.StringVar()
+sheetname_combobox = ttk.Combobox(
+    input_frame,
+    textvariable=sheetname_select,
+    values=[],
+    width=30,
+    state='readonly',
+    font=fontStyle)
+sheetname_combobox.grid(row=1, column=1, sticky=tk.W, padx=4)
+
+# コマンドのCombobox
+label3 = ttk.Label(input_frame, text='コマンド', padding=(5, 2), font=fontStyle)
+label3.grid(row=2, column=0, sticky=tk.W)
 
 cmds = ['組み合わせ作成(登録順で組み合わせ）', '組み合わせ作成(スコア・棋力差・初期ソート順で組み合わせ）', '成績作成']
 cmd_select = tk.StringVar()
@@ -58,11 +73,11 @@ cmd_combobox.set(cmds[0])
 cmd_combobox.bind(
     '<<ComboboxSelected>>',
     lambda e: cmd_select_proc())
-cmd_combobox.grid(row=1, column=1, sticky=tk.W, padx=4)
+cmd_combobox.grid(row=2, column=1, sticky=tk.W, padx=4)
 
 # 対局回数のEntry
-label3 = ttk.Label(input_frame, text='回戦数', padding=(5, 2), font=fontStyle)
-label3.grid(row=2, column=0, sticky=tk.W)
+label4 = ttk.Label(input_frame, text='回戦数', padding=(5, 2), font=fontStyle)
+label4.grid(row=3, column=0, sticky=tk.W)
 
 taikyoku_kaisu = tk.IntVar()
 taikyoku_kaisu_entry = ttk.Entry(
@@ -70,11 +85,11 @@ taikyoku_kaisu_entry = ttk.Entry(
     textvariable=taikyoku_kaisu,
     width=4,
     font=fontStyle)
-taikyoku_kaisu_entry.grid(row=2, column=1, sticky=tk.W, padx=4)
+taikyoku_kaisu_entry.grid(row=3, column=1, sticky=tk.W, padx=4)
 
 # ボタン配置フレーム作成
 button_frame = ttk.Frame(input_frame, padding=(0, 5))
-button_frame.grid(row=3, column=1, sticky=tk.W, padx=4)
+button_frame.grid(row=4, column=1, sticky=tk.W, padx=4)
 
 excel_run_button = tk.Button(
     button_frame,
@@ -107,6 +122,11 @@ def excel_file_name_select_proc():
     file = filedialog.askopenfilename(filetypes = fTyp, initialdir = iDir)
     excel_file_name.set(file)
 
+    # シート名設定
+    wb = openpyxl.load_workbook(excel_file_name.get())
+    sheetname_combobox.config(values=wb.sheetnames)
+    sheetname_combobox.set(wb.sheetnames[0])
+
 # コマンド選択時処理
 def cmd_select_proc():
     if cmd_select.get() == '成績作成':
@@ -127,6 +147,9 @@ def match_table_proc():
     if excel_file_name.get() == '':
         messagebox.showinfo(title, "エクセルファイル名を入力してください。")
         return
+    if sheetname_select.get() == '':
+        messagebox.showinfo(title, "シート名を入力してください。")
+        return
 
     proc = MatchTable.MatchTable()
 
@@ -134,7 +157,7 @@ def match_table_proc():
         # 成績作成処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            proc.write_result(excel_file_name.get(), excel_file_name.get())
+            proc.write_result(excel_file_name.get(), sheetname_select.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':
             messagebox.showinfo(title, "成績の作成が完了しました。")
@@ -152,7 +175,7 @@ def match_table_proc():
         # 組み合わせ処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            proc.player_decision2(taisenNo, excel_file_name.get(), excel_file_name.get())
+            proc.player_decision2(taisenNo, excel_file_name.get(), sheetname_select.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':
             messagebox.showinfo(title, "組み合わせの作成が完了しました。")
@@ -170,7 +193,7 @@ def match_table_proc():
         # 組み合わせ処理の結果、エラーがあれば標準出力に内容が出るのでそれをリダイレクトして取得。
         with io.StringIO() as s:
             sys.stdout = s
-            proc.player_decision(taisenNo, excel_file_name.get(), excel_file_name.get())
+            proc.player_decision(taisenNo, excel_file_name.get(), sheetname_select.get(), excel_file_name.get())
             contents = s.getvalue()
         if contents == '':
             messagebox.showinfo(title, "組み合わせの作成が完了しました。")

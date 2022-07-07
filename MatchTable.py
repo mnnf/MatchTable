@@ -307,12 +307,12 @@ class MatchTable:
         return msg
 
     # 対局者決定
-    def player_decision(self, taisenNo, execel_file_name, save_execel_file_name):
+    def player_decision(self, taisenNo, execel_file_name, sheetname, save_execel_file_name):
 
         self.taisenNo = taisenNo
 
         wb = openpyxl.load_workbook(execel_file_name)
-        sheet = wb.active
+        sheet = wb[ sheetname ]
 
         self.taisensha_info_list = []
 
@@ -371,12 +371,12 @@ class MatchTable:
         wb.save(save_execel_file_name)
 
     # 対局者決定(登録順)
-    def player_decision2(self, taisenNo, execel_file_name, save_execel_file_name):
+    def player_decision2(self, taisenNo, execel_file_name, sheetname, save_execel_file_name):
 
         self.taisenNo = taisenNo
 
         wb = openpyxl.load_workbook(execel_file_name)
-        sheet = wb.active
+        sheet = wb[ sheetname ]
 
         self.taisensha_info_list = []
 
@@ -435,10 +435,10 @@ class MatchTable:
         wb.save(save_execel_file_name)
 
     # 成績決定
-    def write_result(self, execel_file_name, save_execel_file_name):
+    def write_result(self, execel_file_name, sheetname, save_execel_file_name):
 
         wb = openpyxl.load_workbook(execel_file_name)
-        sheet = wb.active
+        sheet = wb[ sheetname ]
 
         # 成績の列位置を取得
         self.result_col_info(sheet)
